@@ -1,0 +1,3 @@
+[submodule "chess-vision-dark"]
+	path = chess-vision-dark
+	url = https://github.com/murad-1999/chess-vision-dark
