@@ -1,2 +1,7 @@
+fastapi
+uvicorn[standard]
+chess
+httpx
+pydantic
 pytest
 pytest-asyncio
