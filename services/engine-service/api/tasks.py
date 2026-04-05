@@ -3,11 +3,7 @@ import httpx
 import chess.pgn
 import asyncio
 
-# Mock import for Stockfish Singleton; update with the actual path once implemented.
-try:
-    from engine import stockfish_singleton
-except ImportError:
-    stockfish_singleton = None
+from engine.stockfish_singleton import stockfish_singleton
 
 TASK_STORE = {}
 
