@@ -7,6 +7,35 @@ from engine.stockfish_singleton import stockfish_singleton
 
 TASK_STORE = {}
 
+
+def _top_line_to_eval(analysis_lines: list[dict]) -> dict:
+    """
+    Transform deep_analyze output (list of PV dicts) into the flat
+    EngineEval shape the frontend expects:
+        { centipawns, winning_chances, mate }
+    """
+    if not analysis_lines:
+        return {"centipawns": 0, "winning_chances": 0.5, "mate": None}
+
+    top = analysis_lines[0]  # multipv=1 is the best line
+    cp = top.get("cp")
+    mate = top.get("mate")
+
+    # Compute winning chances (logistic model, same as StockfishSingleton._wdl_from_score)
+    if mate is not None:
+        winning_chances = 1.0 if mate > 0 else 0.0
+    elif cp is not None:
+        winning_chances = 1 / (1 + 10 ** (-cp / 400))
+    else:
+        winning_chances = 0.5
+
+    return {
+        "centipawns": cp,
+        "winning_chances": winning_chances,
+        "mate": mate,
+    }
+
+
 async def cleanup_task(task_id: str, delay_seconds: int = 3600):
     """Safely removes the task from memory after the specified delay."""
     await asyncio.sleep(delay_seconds)
@@ -66,7 +95,7 @@ async def process_pgn(task_id: str, url: str | None = None, pgn_string: str | No
         if stockfish_singleton is not None:
             for fen in fens:
                 try:
-                    analysis = await stockfish_singleton.analyze_position(fen)
+                    analysis = await stockfish_singleton.deep_analyze(fen, depth=15, multipv=5)
                     list_of_analysis_data.append(analysis)
                 except Exception as e:
                     # In case of custom EngineTimeoutError throwing during analysis
@@ -77,7 +106,10 @@ async def process_pgn(task_id: str, url: str | None = None, pgn_string: str | No
             list_of_analysis_data = [{"position": fen, "eval": "N/A"} for fen in fens]
 
         # Step 4: Completion
-        TASK_STORE[task_id] = {"status": "completed", "results": list_of_analysis_data}
+        # Convert each position's raw PV list into the flat EngineEval shape
+        # { centipawns, winning_chances, mate } that the frontend expects.
+        engine_evals = [_top_line_to_eval(analysis) for analysis in list_of_analysis_data]
+        TASK_STORE[task_id] = {"status": "completed", "results": engine_evals}
         
     finally:
         # Step 5: Self-destruction scheduling

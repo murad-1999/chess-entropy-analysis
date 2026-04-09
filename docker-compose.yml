@@ -1,5 +1,5 @@
 services:
-  gui:
+  chess-vision-dark:
     build:
       context: ./services/chess-vision-dark
       dockerfile: Dockerfile
@@ -8,7 +8,7 @@ services:
     networks:
       - chess-network
 
-  engine:
+  engine-service:
     build:
       context: ./services/engine-service
     ports:
