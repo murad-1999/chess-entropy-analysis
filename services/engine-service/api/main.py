@@ -59,34 +59,27 @@ class AnalysisRequest(BaseModel):
     )
     depth: int = Field(15, ge=1, le=30, description="Search depth for deep analysis.")
     multipv: int = Field(5, ge=1, le=10, description="Number of top moves returned by deep analysis.")
-    time_limit_ms: int = Field(100, ge=10, le=5000, description="Time budget (ms) for fast evaluation.")
-    is_fast_eval: bool = Field(
-        False,
-        description=(
-            "When True, run a quick time-limited single-line evaluation (ideal for "
-            "real-time UI updates). When False, run a full multi-PV deep analysis."
-        ),
-    )
-
 
 @app.post("/analyze")
 async def analyze_position(request: AnalysisRequest):
     """
-    Analyse a single chess position.
-
-    - **is_fast_eval=True**  → fast_eval: time-limited, multipv=1, returns one move + score.
-    - **is_fast_eval=False** → deep_analyze: depth-limited, multi-PV, returns ranked move list.
+    Analyse a single chess position for JIT evaluation.
+    Evaluates the specific FEN and returns a JSON array of the top engine lines.
     """
-    if request.is_fast_eval:
-        result = await stockfish_singleton.fast_eval(
-            fen=request.fen,
-            time_limit_ms=request.time_limit_ms,
-        )
-        return result
-    else:
-        moves = await stockfish_singleton.deep_analyze(
-            fen=request.fen,
-            depth=request.depth,
-            multipv=request.multipv,
-        )
-        return {"position": request.fen, "moves": moves}
+    moves = await stockfish_singleton.deep_analyze(
+        fen=request.fen,
+        depth=request.depth,
+        multipv=request.multipv,
+    )
+    
+    # Format the result as a JSON array of the top engine lines
+    formatted_moves = [
+        {
+            "uci_move": m["pv"],
+            "centipawn": m["cp"],
+            "mate": m["mate"]
+        }
+        for m in moves
+    ]
+    
+    return formatted_moves
