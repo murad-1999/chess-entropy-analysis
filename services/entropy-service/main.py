@@ -19,7 +19,7 @@ app.add_middleware(
 class EngineLine(BaseModel):
     uci_move: Optional[str] = Field(None, description="UCI format move, e.g., 'e2e4'")
     pv: Optional[str] = Field(None, description="Principal Variation from engine")
-    cp_score: Optional[float] = Field(None, description="Centipawn evaluation score")
+    centipawn: Optional[float] = Field(None, description="Centipawn evaluation score")
     cp: Optional[float] = Field(None, description="Raw CP from engine")
     mate: Optional[int] = Field(None, description="Mate in X moves")
 
@@ -52,13 +52,15 @@ def calculate_shannon_entropy(probabilities: List[float]) -> float:
             entropy -= p * math.log2(p)
     return entropy
 
-def get_effective_score(mate: Optional[int], cp: Optional[float], cp_score: Optional[float]) -> float:
+def get_effective_score(mate: Optional[int], cp: Optional[float], centipawn: Optional[float], cp_score: Optional[float] = None) -> float:
     if mate is not None:
         return 10000.0 if mate > 0 else -10000.0
-    if cp_score is not None:
-        return float(cp_score)
+    if centipawn is not None:
+        return float(centipawn)
     if cp is not None:
         return float(cp)
+    if cp_score is not None:
+        return float(cp_score)
     return 0.0
 
 def get_move_from_line(line: EngineLine) -> str:
@@ -72,7 +74,7 @@ def process_lines(lines: List[EngineLine]) -> tuple[float, Dict[str, float]]:
     if not lines:
         return 0.0, {}
         
-    scores = [get_effective_score(line.mate, line.cp, line.cp_score) for line in lines]
+    scores = [get_effective_score(line.mate, line.cp, line.centipawn) for line in lines]
     probabilities = calculate_softmax(scores, temperature=50.0)
     total_entropy = calculate_shannon_entropy(probabilities)
     
@@ -104,11 +106,16 @@ async def analyze_and_map(request: AnalyzeRequest):
     
     async with httpx.AsyncClient() as client:
         try:
-            resp = await client.post(engine_url, json={"fen": request.fen})
+            resp = await client.post(engine_url, json={"fen": request.fen}, timeout=10.0)
             resp.raise_for_status()
             data = resp.json()
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Engine service error: {str(e)}")
+            print(f"Engine service error: {str(e)}")
+            return AnalyzeAndMapResponse(
+                engine_lines=[],
+                total_entropy=0.0,
+                tension_matrix={}
+            )
             
     raw_lines = data if isinstance(data, list) else data.get("analysis", data.get("lines", []))
     if not isinstance(raw_lines, list):
