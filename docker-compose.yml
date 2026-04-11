@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:80"
+    depends_on:
+      - entropy-service
     networks:
       - chess-network
 
@@ -13,6 +15,20 @@ services:
       context: ./services/engine-service
     ports:
       - "8000:8000"
+    networks:
+      - chess-network
+
+  entropy-service:
+    build:
+      context: ./services/entropy-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/entropy-service:/app
+    environment:
+      - ENGINE_API_URL=http://engine-service:8000/analyze
+    depends_on:
+      - engine-service
     networks:
       - chess-network
 
