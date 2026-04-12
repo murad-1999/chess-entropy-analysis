@@ -35,7 +35,7 @@ class AnalyzeAndMapResponse(BaseModel):
     total_entropy: float
     tension_matrix: Dict[str, float]
 
-def calculate_softmax(scores: List[float], temperature: float = 50.0) -> List[float]:
+def calculate_softmax(scores: List[float], temperature: float = 1.0) -> List[float]:
     if not scores:
         return []
     max_score = max(scores)
@@ -75,7 +75,7 @@ def process_lines(lines: List[EngineLine]) -> tuple[float, Dict[str, float]]:
         return 0.0, {}
         
     scores = [get_effective_score(line.mate, line.cp, line.centipawn) for line in lines]
-    probabilities = calculate_softmax(scores, temperature=50.0)
+    probabilities = calculate_softmax(scores, temperature=1.0)
     total_entropy = calculate_shannon_entropy(probabilities)
     
     tension_matrix = {}
