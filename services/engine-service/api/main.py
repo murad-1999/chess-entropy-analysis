@@ -57,8 +57,8 @@ class AnalysisRequest(BaseModel):
         description="FEN string of the position to analyse.",
         examples=["rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"],
     )
-    depth: int = Field(15, ge=1, le=30, description="Search depth for deep analysis.")
-    multipv: int = Field(5, ge=1, le=10, description="Number of top moves returned by deep analysis.")
+    depth: int = Field(10, ge=1, le=30, description="Search depth for deep analysis.")
+    multipv: int = Field(3, ge=1, le=10, description="Number of top moves returned by deep analysis.")
 
 @app.post("/analyze")
 async def analyze_position(request: AnalysisRequest):
@@ -75,7 +75,8 @@ async def analyze_position(request: AnalysisRequest):
     # Format the result as a JSON array of the top engine lines
     formatted_moves = [
         {
-            "uci_move": m["pv"],
+            "uci_move": m["pv"].split()[0] if m["pv"] else None,
+            "pv": m["pv"],
             "centipawn": m["cp"],
             "mate": m["mate"]
         }

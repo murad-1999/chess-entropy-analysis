@@ -74,7 +74,9 @@ def process_lines(lines: List[EngineLine]) -> tuple[float, Dict[str, float]]:
     if not lines:
         return 0.0, {}
         
-    scores = [get_effective_score(line.mate, line.cp, line.centipawn) for line in lines]
+    # Scale centipawns to pawns (divide by 100.0) so T=1.0 works as intended
+    scores = [get_effective_score(line.mate, line.cp, line.centipawn) / 100.0 for line in lines]
+    # Temperature (T=1.0) ensures entropy spikes only during significant tactical tension
     probabilities = calculate_softmax(scores, temperature=1.0)
     total_entropy = calculate_shannon_entropy(probabilities)
     

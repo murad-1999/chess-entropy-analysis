@@ -7,7 +7,7 @@ _RE_DEPTH   = re.compile(r'\bdepth\s+(\d+)')
 _RE_MULTIPV = re.compile(r'\bmultipv\s+(\d+)')
 _RE_CP      = re.compile(r'\bscore\s+cp\s+(-?\d+)')
 _RE_MATE    = re.compile(r'\bscore\s+mate\s+(-?\d+)')
-_RE_PV      = re.compile(r'\bpv\s+([a-h][1-8][a-h][1-8][qrbnQRBN]?)')
+_RE_PV      = re.compile(r'\bpv\s+(.*)')
 
 def _parse_info_line(line: str) -> dict | None:
     """
