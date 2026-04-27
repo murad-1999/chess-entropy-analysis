@@ -6,6 +6,7 @@ interface ChessBoardProps {
   fen: string;
   flipped: boolean;
   lastMove?: { from: string; to: string } | null;
+  tensionMatrix?: Record<string, number>;
 }
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -19,7 +20,7 @@ function getSquareCoords(square: string, flipped: boolean): { col: number; row: 
   return { col, row };
 }
 
-export function ChessBoard({ fen, flipped, lastMove }: ChessBoardProps) {
+export function ChessBoard({ fen, flipped, lastMove, tensionMatrix }: ChessBoardProps) {
   const chess = new Chess(fen);
   const board = chess.board();
 
@@ -63,6 +64,42 @@ export function ChessBoard({ fen, flipped, lastMove }: ChessBoardProps) {
     }
   }, [lastMove, flipped]);
 
+  const getHeatmapColor = (value: number) => {
+    const v = Math.min(1, Math.max(0, value));
+    if (v === 0) return 'transparent';
+    
+    // Former color scheme: Blue -> Red
+    const colors = [
+      [30, 64, 175],   // 0.0: Deep Blue
+      [59, 130, 246],  // 0.25: Blue
+      [217, 119, 6],   // 0.5: Golden/Orange
+      [239, 68, 68],   // 0.75: Red
+      [236, 72, 153],  // 1.0: Pinkish Red
+    ];
+    
+    const index = v * (colors.length - 1);
+    const i = Math.floor(index);
+    const f = index - i;
+    
+    // High opacity so the square is strongly "one colour" as requested,
+    // avoiding the mix-blend issues.
+    const baseOpacity = 0.85;
+    
+    if (i >= colors.length - 1) {
+      const [r, g, b] = colors[colors.length - 1];
+      return `rgba(${r}, ${g}, ${b}, ${baseOpacity})`;
+    }
+    
+    const [r1, g1, b1] = colors[i];
+    const [r2, g2, b2] = colors[i + 1];
+    
+    const r = Math.round(r1 + f * (r2 - r1));
+    const g = Math.round(g1 + f * (g2 - g1));
+    const b = Math.round(b1 + f * (b2 - b1));
+    
+    return `rgba(${r}, ${g}, ${b}, ${baseOpacity})`;
+  };
+
   return (
     <div className="grid grid-cols-8 grid-rows-[repeat(8,1fr)] border border-border rounded-md overflow-hidden aspect-square w-full max-w-[672px]">
       {ranks.map((rank, ri) =>
@@ -77,13 +114,19 @@ export function ChessBoard({ fen, flipped, lastMove }: ChessBoardProps) {
           return (
             <div
               key={squareName}
-              className="relative flex items-center justify-center select-none aspect-square overflow-visible"
+              className="relative flex items-center justify-center select-none aspect-square overflow-hidden border-[0.5px] border-black/20 dark:border-white/10"
               style={{
                 backgroundColor: isLight
                   ? 'hsl(var(--board-light))'
                   : 'hsl(var(--board-dark))',
               }}
             >
+              {tensionMatrix && tensionMatrix[squareName] > 0 && (
+                <div 
+                  className="absolute inset-0 z-10 transition-colors duration-500 ease-in-out"
+                  style={{ backgroundColor: getHeatmapColor(tensionMatrix[squareName]) }}
+                />
+              )}
               {fi === 0 && (
                 <span
                   className="absolute top-0.5 left-0.5 z-20 text-xs leading-none font-semibold"

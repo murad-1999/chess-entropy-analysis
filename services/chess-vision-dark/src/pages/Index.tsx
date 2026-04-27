@@ -9,7 +9,6 @@ import { NavigationControls } from '@/components/NavigationControls';
 import { GameInput } from '@/components/GameInput';
 import { CapturedPieces } from '@/components/CapturedPieces';
 import { TensionMetric } from '@/components/TensionMetric';
-import { HeatmapOverlay } from '@/components/HeatmapOverlay';
 import { HeatmapLegend } from '@/components/HeatmapLegend';
 import { EntropyGraph, EntropyDataPoint } from '@/components/EntropyGraph';
 import { EngineLines } from '@/components/EngineLines';
@@ -335,9 +334,8 @@ const Index = () => {
                   mate={evalMate}
                   flipped={flipped}
                 />
-                <div className="relative flex-1">
-                  <ChessBoard fen={currentFen} flipped={flipped} lastMove={currentLastMove} />
-                  <HeatmapOverlay tensionMatrix={tensionMatrix} flipped={flipped} />
+                <div className="relative w-full">
+                  <ChessBoard fen={currentFen} flipped={flipped} lastMove={currentLastMove} tensionMatrix={tensionMatrix} />
                 </div>
               </div>
 
