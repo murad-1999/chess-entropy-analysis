@@ -28,8 +28,8 @@ export const HeatmapOverlay: React.FC<HeatmapOverlayProps> = React.memo(({ tensi
     const i = Math.floor(index);
     const f = index - i;
     
-    // Base opacity: 0.4 for low tension, 0.85 for high tension
-    const baseOpacity = 0.4 + (v * 0.45);
+    // Base opacity: reduced to ensure pieces are visible
+    const baseOpacity = 0.15 + (v * 0.25);
     
     if (i >= colors.length - 1) {
       const [r, g, b] = colors[colors.length - 1];
@@ -55,7 +55,7 @@ export const HeatmapOverlay: React.FC<HeatmapOverlayProps> = React.memo(({ tensi
           return (
             <div
               key={square}
-              className="w-full h-full border border-black/10 dark:border-white/10 transition-colors duration-500 ease-in-out"
+              className="w-full h-full border border-black/50 dark:border-white/50 transition-colors duration-500 ease-in-out"
               style={{
                 backgroundColor: getHeatmapColor(value),
               }}

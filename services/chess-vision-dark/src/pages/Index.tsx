@@ -217,11 +217,7 @@ const Index = () => {
       const bestLine = data.engine_lines?.[0];
       if (bestLine) {
         // cp_score is in centipawns, convert to pawns for EvalBar
-        const rawCp = bestLine.cp_score ?? bestLine.centipawn ?? bestLine.cp;
-        const score = rawCp != null && !isNaN(parseFloat(String(rawCp)))
-          ? (parseFloat(String(rawCp)) / 100) 
-          : 0.0;
-        setCurrentEval(score);
+        setCurrentEval(parseFloat(data.engine_lines[0]?.cp_score as unknown as string) || 0.0);
         setCurrentMate(bestLine.mate_score ?? bestLine.mate);
         setCurrentPv(bestLine.pv || '');
       } else {
