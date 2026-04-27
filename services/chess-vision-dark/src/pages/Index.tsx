@@ -346,7 +346,7 @@ const Index = () => {
               </div>
 
               <div className="w-full">
-                <EngineLines lines={currentLines} />
+                <EngineLines lines={currentLines} fen={currentFen} />
               </div>
 
               <div className="w-full">

@@ -1,12 +1,14 @@
 import React from 'react';
 import { EngineLine } from '@/services/api';
+import { uciToSan } from '@/lib/chess-utils';
 
 interface EngineLinesProps {
   lines: EngineLine[];
+  fen: string;
 }
 
-export const EngineLines: React.FC<EngineLinesProps> = ({ lines }) => {
-  if (!lines || lines.length === 0) return null;
+export const EngineLines: React.FC<EngineLinesProps> = ({ lines, fen }) => {
+  if (!lines || lines.length === 0 || !fen) return null;
 
   return (
     <div className="flex flex-col gap-2 mt-2">
@@ -43,7 +45,7 @@ export const EngineLines: React.FC<EngineLinesProps> = ({ lines }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-mono text-foreground/80 leading-relaxed break-words">
-                  {line.pv || 'Calculating...'}
+                  {line.pv ? uciToSan(fen, line.pv) : 'Calculating...'}
                 </p>
               </div>
             </div>

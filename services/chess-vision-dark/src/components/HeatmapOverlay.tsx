@@ -15,21 +15,24 @@ export const HeatmapOverlay: React.FC<HeatmapOverlayProps> = React.memo(({ tensi
   const getHeatmapColor = (value: number) => {
     const v = Math.min(1, Math.max(0, value));
     
-    // Custom colormap: Deep Blue -> Light Blue -> Orange -> Red
+    // We want the heatmap highlight to look like a solid color overlay
+    // The user attached a soft, pastel pinkish-red. We will use a gradient
+    // from a soft transparent color to that solid pastel red.
     const colors = [
-      [30, 64, 175],   // 0.0: Deep Blue
-      [59, 130, 246],  // 0.25: Blue
-      [217, 119, 6],   // 0.5: Golden/Orange
-      [239, 68, 68],   // 0.75: Red
-      [236, 72, 153],  // 1.0: Pinkish Red
+      [82, 171, 230],  // Light Blue
+      [242, 203, 94],  // Soft Yellow
+      [237, 145, 104], // Soft Orange
+      [226, 149, 155], // Pastel Red (from attached image)
     ];
     
     const index = v * (colors.length - 1);
     const i = Math.floor(index);
     const f = index - i;
     
-    // Base opacity: reduced to ensure pieces are visible
-    const baseOpacity = 0.15 + (v * 0.25);
+    // Base opacity: use a higher opacity so the color is consistent on light/dark squares
+    const baseOpacity = v === 0 ? 0 : 0.4 + (v * 0.5);
+    
+    if (v === 0) return 'transparent';
     
     if (i >= colors.length - 1) {
       const [r, g, b] = colors[colors.length - 1];
@@ -47,7 +50,7 @@ export const HeatmapOverlay: React.FC<HeatmapOverlayProps> = React.memo(({ tensi
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none grid grid-cols-8 grid-rows-8 z-10 rounded-md overflow-hidden mix-blend-multiply dark:mix-blend-screen">
+    <div className="absolute inset-0 pointer-events-none grid grid-cols-8 grid-rows-8 z-10 rounded-md overflow-hidden">
       {displayRanks.map(rank =>
         displayFiles.map(file => {
           const square = `${file}${rank}`;
@@ -55,7 +58,7 @@ export const HeatmapOverlay: React.FC<HeatmapOverlayProps> = React.memo(({ tensi
           return (
             <div
               key={square}
-              className="w-full h-full border border-black/50 dark:border-white/50 transition-colors duration-500 ease-in-out"
+              className="w-full h-full transition-colors duration-500 ease-in-out"
               style={{
                 backgroundColor: getHeatmapColor(value),
               }}
