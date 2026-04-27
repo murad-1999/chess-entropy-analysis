@@ -19,8 +19,8 @@ export function EvalBar({ evaluation, winningChances, mate, flipped }: EvalBarPr
       displayText = `${sign}${evaluation.toFixed(1)}`;
     }
   } else if (evaluation != null) {
-    const clamped = Math.max(-10, Math.min(10, evaluation));
-    whitePercent = 50 + (clamped / 10) * 50;
+    const clamped = Math.max(-5, Math.min(5, evaluation));
+    whitePercent = 50 + (clamped / 5) * 50;
     const sign = evaluation > 0 ? '+' : '';
     displayText = Math.abs(evaluation) >= 10
       ? (evaluation > 0 ? '+10' : '-10')
