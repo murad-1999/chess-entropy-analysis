@@ -18,21 +18,24 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Add a custom nginx configuration for SPAs (React Router)
-RUN echo 'server { \
-    listen 80; \
+# Add a custom nginx configuration template for SPAs (React Router) and reverse proxy
+RUN mkdir -p /etc/nginx/templates && echo 'server { \
+    listen ${PORT}; \
     location / { \
-    root /usr/share/nginx/html; \
-    index index.html index.htm; \
-    try_files $uri $uri/ /index.html; \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
     } \
-    }' > /etc/nginx/conf.d/default.conf
+    location /api/ { \
+        proxy_pass ${GATEWAY_URL}/; \
+    } \
+}' > /etc/nginx/templates/default.conf.template
 
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
 # Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

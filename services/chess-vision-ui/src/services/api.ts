@@ -1,5 +1,3 @@
-const ENTROPY_SERVICE_URL = 'http://localhost:8001';
-
 export interface EngineLine {
   cp_score: number | null;
   mate_score: number | null;
@@ -10,18 +8,19 @@ export interface EngineLine {
 }
 
 export interface AnalysisResponse {
-  total_entropy: number;
-  tension_matrix: Record<string, number>;
   engine_lines: EngineLine[];
+  eval_cp: number;
+  mate: number | null;
+  classification: string;
 }
 
-export async function analyzePosition(fen: string): Promise<AnalysisResponse> {
-  const response = await fetch(`${ENTROPY_SERVICE_URL}/analyze_and_map`, {
+export async function analyzePosition(fen: string, prev_fen?: string): Promise<AnalysisResponse> {
+  const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ fen }),
+    body: JSON.stringify({ fen, prev_fen }),
   });
 
   if (!response.ok) {

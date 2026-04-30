@@ -26,4 +26,4 @@ RUN useradd -m appuser \
 USER appuser
 
 # Run in single process mode to avoid singleton lock collision (No --workers flag)
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD sh -c "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8080}"

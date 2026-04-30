@@ -8,9 +8,6 @@ import { MoveList } from '@/components/MoveList';
 import { NavigationControls } from '@/components/NavigationControls';
 import { GameInput } from '@/components/GameInput';
 import { CapturedPieces } from '@/components/CapturedPieces';
-import { TensionMetric } from '@/components/TensionMetric';
-import { HeatmapLegend } from '@/components/HeatmapLegend';
-import { EntropyGraph, EntropyDataPoint } from '@/components/EntropyGraph';
 import { EngineLines } from '@/components/EngineLines';
 import { detectInputType, fetchPgnFromUrl, evaluateMaterial } from '@/lib/chess-utils';
 import { detectOpening } from '@/lib/openings';
@@ -51,27 +48,13 @@ const Index = () => {
 
   // JIT Analysis state
   const [analysisCache, setAnalysisCache] = useState<Record<string, AnalysisResponse>>({});
-  const [tensionMatrix, setTensionMatrix] = useState<Record<string, number>>({});
-  const [currentEntropy, setCurrentEntropy] = useState<number>(0);
+  const [currentClassification, setCurrentClassification] = useState<string>('Book');
   const [currentEval, setCurrentEval] = useState<number | null>(null);
   const [currentMate, setCurrentMate] = useState<number | null>(null);
   const [currentPv, setCurrentPv] = useState<string>('');
   const [currentLines, setCurrentLines] = useState<AnalysisResponse['engine_lines']>([]);
 
-  // Background Graph Hydration (Computed from cache)
-  const entropyData = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.fens
-      .map((fen, idx) => {
-        const cached = analysisCache[fen];
-        if (!cached) return null;
-        return {
-          ply: idx,
-          entropy: cached.total_entropy,
-        } as EntropyDataPoint;
-      })
-      .filter((d): d is EntropyDataPoint => d !== null);
-  }, [gameState, analysisCache]);
+
 
   const toggleTheme = useCallback(() => {
     document.documentElement.classList.toggle('dark');
@@ -208,25 +191,17 @@ const Index = () => {
   useEffect(() => {
     if (!currentFen) return;
 
-    // Helper to update state from analysis data
     const updateAnalysisState = (data: AnalysisResponse) => {
-      setCurrentEntropy(data.total_entropy);
-      setTensionMatrix(data.tension_matrix);
+      setCurrentClassification(data.classification);
+      
+      let evalScore = data.eval_cp / 100;
+      setCurrentEval(evalScore);
+      setCurrentMate(data.mate);
       
       const bestLine = data.engine_lines?.[0];
       if (bestLine) {
-        // cp_score is in centipawns, convert to pawns for EvalBar
-        const rawCp = bestLine.cp_score ?? bestLine.centipawn ?? bestLine.cp;
-        
-        let evalScore = rawCp != null && !isNaN(parseFloat(String(rawCp))) ? parseFloat(String(rawCp)) / 100 : 0.0;
-        setCurrentEval(evalScore);
-        
-        let mateScore = bestLine.mate_score ?? bestLine.mate;
-        setCurrentMate(mateScore);
         setCurrentPv(bestLine.pv || '');
       } else {
-        setCurrentEval(null);
-        setCurrentMate(null);
         setCurrentPv('');
       }
       setCurrentLines(data.engine_lines || []);
@@ -241,7 +216,9 @@ const Index = () => {
     // Debounce the API call (prevent race conditions and backend spam)
     const timeoutId = setTimeout(async () => {
       try {
-        const data = await analyzePosition(currentFen);
+        const prevFenIndex = Math.max(0, currentFenIndex - 1);
+        const prevFen = gameState && currentFenIndex > 0 ? gameState.fens[prevFenIndex] : undefined;
+        const data = await analyzePosition(currentFen, prevFen);
         
         // Update cache and current position data
         setAnalysisCache(prev => ({ ...prev, [currentFen]: data }));
@@ -321,10 +298,11 @@ const Index = () => {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Board column */}
             <div className="flex flex-col gap-3 flex-shrink-0 max-w-[672px] lg:max-w-[720px] w-full">
-              {/* Captured pieces & Tension */}
               <div className="flex items-center justify-between min-h-[28px] px-2">
                 <CapturedPieces fen={currentFen} />
-                <TensionMetric currentEntropy={currentEntropy} />
+                <div className="text-sm font-semibold tracking-wide" style={{ color: currentClassification === 'Blunder' ? '#ef4444' : currentClassification === 'Mistake' ? '#f97316' : currentClassification === 'Inaccuracy' ? '#eab308' : 'inherit' }}>
+                  {currentClassification}
+                </div>
               </div>
 
               <div className="flex gap-3 rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-border/60">
@@ -335,20 +313,12 @@ const Index = () => {
                   flipped={flipped}
                 />
                 <div className="relative w-full">
-                  <ChessBoard fen={currentFen} flipped={flipped} lastMove={currentLastMove} tensionMatrix={tensionMatrix} />
+                  <ChessBoard fen={currentFen} flipped={flipped} lastMove={currentLastMove} tensionMatrix={{}} />
                 </div>
               </div>
 
               <div className="w-full">
-                <HeatmapLegend />
-              </div>
-
-              <div className="w-full">
                 <EngineLines lines={currentLines} fen={currentFen} />
-              </div>
-
-              <div className="w-full">
-                <EntropyGraph data={entropyData} />
               </div>
 
               {/* Opening name */}
